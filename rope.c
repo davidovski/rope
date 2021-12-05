@@ -16,7 +16,7 @@ typedef struct point {
     int next;
 } Point;
 
-Point points[64]; 
+Point points[8]; 
 
 int populatePoints() {
     int count = sizeof(points) / sizeof(Point);
@@ -69,14 +69,18 @@ int draw(void) {
 
     for (int i = 0; i < count; i++) {
         Point *p = &points[i]; 
-        Point *n = &points[(i+1)% count];
-        Point *m = &points[(i-1)% count];
-
         p->vel.x = 0;
         p->vel.y = 0;
 
-        physics(p, n);
-        physics(p, m);
+        if (i+1 < count) {
+            Point *n = &points[(i+1)];
+            physics(p, n);
+        }
+
+        if (i-1 > -1) {
+            Point *m = &points[(i-1)];
+            physics(p, m);
+        }
 
         p->pos.x += p->vel.x;
         p->pos.y += p->vel.y;
@@ -96,9 +100,12 @@ int draw(void) {
 
     for (int i = 0; i < count; i++) {
         Point *p = &points[i]; 
-        Point *n = &points[(i+1)% count];
+        if (i+1 < count) {
+            Point *n = &points[(i+1)];
+            DrawLineEx(p->pos, n->pos, radius / 2, DARKGRAY);
+        }
+
         DrawCircle(p->pos.x, p->pos.y, radius, DARKGRAY);
-        DrawLineEx(p->pos, n->pos, radius / 2, DARKGRAY);
     }
 
 
