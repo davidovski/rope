@@ -66,10 +66,6 @@ int draw(void) {
 
     int count = sizeof(points) / sizeof(Point);
 
-    if (holding > -1) {
-        Point *p = &points[holding];
-        p->pos = mouse;
-    }
 
     for (int i = 0; i < count; i++) {
         Point *p = &points[i]; 
@@ -92,9 +88,16 @@ int draw(void) {
         } else {
             holding = -1;
         }
+    }
+    if (holding > -1) {
+        Point *p = &points[holding];
+        p->pos = mouse;
+    }
 
+    for (int i = 0; i < count; i++) {
+        Point *p = &points[i]; 
+        Point *n = &points[(i+1)% count];
         DrawCircle(p->pos.x, p->pos.y, radius, DARKGRAY);
-
         DrawLineEx(p->pos, n->pos, radius / 2, DARKGRAY);
     }
 
