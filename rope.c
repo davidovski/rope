@@ -3,10 +3,21 @@
 #include <stdlib.h>
 #include <math.h>
 
-const int radius = 8;
-const int size[] = {800, 450};
-const float t = 0.2;
-const int distance = 64;
+#define POINTS 8
+#define DISTANCE 2
+#define RADIUS 8
+#define TENSION 0.7
+#define ELASTICITY 1
+#define VISIBLE_DOTS 1
+
+#define HIGHLIGHT_ENDS 1
+
+#define GRAVITY -2.4
+
+#define SCREEN_W 800
+#define SCREEN_H 600
+
+const int size[] = {SCREEN_W, SCREEN_H};
 
 int holding = -1;
 
@@ -16,7 +27,7 @@ typedef struct point {
     int next;
 } Point;
 
-Point points[8]; 
+Point points[POINTS]; 
 
 int populatePoints() {
     int count = sizeof(points) / sizeof(Point);
@@ -28,7 +39,6 @@ int populatePoints() {
 float magnitude(Vector2 a) {
     return sqrt(a.x*a.x + a.y*a.y);
 }
-
 
 int distanceSquared(Vector2 a, Vector2 b) {
     int dx = (a.x - b.x);
@@ -49,12 +59,31 @@ Vector2 normalize(Vector2 a) {
     return (Vector2){a.x / m, a.y / m};
 }
 
+int clampInPlace(Point *p) {
+    if (p->pos.x < 0) {
+        p->vel.x = 0;
+        p->pos.x = 0;
+    } else if (p->pos.x > SCREEN_W) {
+        p->vel.x = 0;
+        p->pos.x = SCREEN_W;
+    }
+
+
+    if (p->pos.y < 0) {
+        p->vel.y = 0;
+        p->pos.y = 0;
+    } else if (p->pos.y > SCREEN_H) {
+        p->vel.y = 0;
+        p->pos.y = SCREEN_H;
+    }
+}
+
 int physics(Point *p, Point *n) {
     Vector2 d = (Vector2){(n->pos.x - p->pos.x), (n->pos.y - p->pos.y)};
-    Vector2 f = mul(normalize(d), t * (magnitude(d) - distance));
+    Vector2 f = mul(normalize(d), TENSION * (magnitude(d) - DISTANCE));
 
-    p->vel.x += f.x;
-    p->vel.y += f.y;
+    p->vel.x += f.x * ELASTICITY;
+    p->vel.y += f.y * ELASTICITY;
 
 }
 
@@ -82,12 +111,16 @@ int draw(void) {
             physics(p, m);
         }
 
+        p->vel.y -= GRAVITY;
+        clampInPlace(p);
         p->pos.x += p->vel.x;
         p->pos.y += p->vel.y;
 
         if (IsMouseButtonDown(0)) {
-            if (distanceSquared(p->pos, mouse) < radius*radius) {
+            if (distanceSquared(p->pos, mouse) < RADIUS*RADIUS) {
                 holding = i;
+                p->vel.x = 0;
+                p->vel.y = 0;
             }
         } else {
             holding = -1;
@@ -102,10 +135,21 @@ int draw(void) {
         Point *p = &points[i]; 
         if (i+1 < count) {
             Point *n = &points[(i+1)];
-            DrawLineEx(p->pos, n->pos, radius / 2, DARKGRAY);
+            DrawLineEx(p->pos, n->pos, RADIUS, DARKGRAY);
         }
-
-        DrawCircle(p->pos.x, p->pos.y, radius, DARKGRAY);
+#if VISIBLE_DOTS
+        Color color;
+#if HIGHLIGHT_ENDS
+        if (i == 0 || i == POINTS - 1) {
+            color = RED;
+        } else {
+            color = GRAY;
+        }
+#else
+        color = DARKGRAY;
+#endif
+        DrawCircle(p->pos.x, p->pos.y, RADIUS, color);
+#endif
     }
 
 
@@ -113,8 +157,6 @@ int draw(void) {
 }
 
 int main(void) {
-
-
     InitWindow(size[0], size[1], "Rope");
 
     SetTargetFPS(60);
